@@ -1,7 +1,8 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
+using Windows.Storage;
 
 namespace App1
 {
@@ -9,10 +10,19 @@ namespace App1
     {
         private int[] tiles = new int[16];
         private Stack<int[]> history = new Stack<int[]>();
+        private int bestScore = int.MaxValue;
 
         public MainPage()
         {
             this.InitializeComponent();
+
+            // Завантаження рекорду
+            var settings = ApplicationData.Current.LocalSettings;
+            if (settings.Values.ContainsKey("BestScore"))
+            {
+                bestScore = (int)settings.Values["BestScore"];
+            }
+
             StartNewGame();
         }
 
@@ -82,7 +92,8 @@ namespace App1
                 GameGrid.Children.Add(btn);
             }
 
-            StatusText.Text = "Ходів: " + history.Count;
+            StatusText.Text = "Ходів: " + (history.Count - 1);
+            BestScoreText.Text = bestScore < int.MaxValue ? $"Рекорд: {bestScore}" : "Рекорд: -";
         }
 
         private void Tile_Click(object sender, RoutedEventArgs e)
@@ -101,7 +112,14 @@ namespace App1
 
                 if (IsFinished())
                 {
-                    StatusText.Text = "Виграш 🎉";
+                    int moves = history.Count - 1;
+                    StatusText.Text = $"Виграш 🎉 Ходів: {moves}";
+
+                    if (moves < bestScore)
+                    {
+                        bestScore = moves;
+                        ApplicationData.Current.LocalSettings.Values["BestScore"] = bestScore;
+                    }
                 }
             }
         }
@@ -133,7 +151,7 @@ namespace App1
         {
             if (history.Count > 1)
             {
-                history.Pop(); // current state
+                history.Pop();
                 tiles = history.Peek();
                 DrawTiles();
             }
